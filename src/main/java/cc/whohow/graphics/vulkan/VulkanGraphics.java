@@ -15,6 +15,7 @@ import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
+import java.util.concurrent.TimeUnit;
 
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.glfw.GLFWKeyCallback;
@@ -700,9 +701,9 @@ public class VulkanGraphics {
         FloatBuffer fb = vertexBuffer.asFloatBuffer();
         // The triangle will showup upside-down, because Vulkan does not do proper viewport transformation to
         // account for inverted Y axis between the window coordinate system and clip space/NDC
-        fb.put(-0.5f).put(-0.5f);
-        fb.put( 0.5f).put(-0.5f);
-        fb.put( 0.0f).put( 0.5f);
+        fb.put(-1f).put(-1f);
+        fb.put(1f).put(-1f);
+        fb.put( 0.0f).put( 1f);
 
         VkMemoryAllocateInfo memAlloc = VkMemoryAllocateInfo.calloc()
                 .sType(VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO)
@@ -1238,7 +1239,6 @@ public class VulkanGraphics {
         // Pre-allocate everything needed in the render loop
 
         IntBuffer pImageIndex = memAllocInt(1);
-        int currentBuffer = 0;
         PointerBuffer pCommandBuffers = memAllocPointer(1);
         LongBuffer pSwapchains = memAllocLong(1);
         LongBuffer pImageAcquiredSemaphore = memAllocLong(1);
@@ -1273,6 +1273,8 @@ public class VulkanGraphics {
                 .pResults(null);
 
         // The render loop
+        long t0 = System.nanoTime();
+        float f = 0;
         while (!glfwWindowShouldClose(window)) {
             // Handle window messages. Resize events happen exactly here.
             // So it is safe to use the new swapchain images and framebuffers afterwards.
@@ -1295,7 +1297,7 @@ public class VulkanGraphics {
             // Get next image from the swap chain (back/front buffer).
             // This will setup the imageAquiredSemaphore to be signalled when the operation is complete
             err = vkAcquireNextImageKHR(device, swapchain.swapchainHandle, UINT64_MAX, pImageAcquiredSemaphore.get(0), VK_NULL_HANDLE, pImageIndex);
-            currentBuffer = pImageIndex.get(0);
+            int currentBuffer = pImageIndex.get(0);
             if (err != VK_SUCCESS) {
                 throw new AssertionError("Failed to acquire next swapchain image: " + translateVulkanResult(err));
             }
@@ -1325,6 +1327,12 @@ public class VulkanGraphics {
             vkDestroySemaphore(device, pImageAcquiredSemaphore.get(0), null);
             vkDestroySemaphore(device, pRenderCompleteSemaphore.get(0), null);
             submitPostPresentBarrier(swapchain.images[currentBuffer], postPresentCommandBuffer, queue);
+
+            f++;
+            float s = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - t0);
+            System.out.println("f:" + f);
+            System.out.println("s:" + s);
+            System.out.println("fps:" + (f / s));
         }
         presentInfo.free();
         memFree(pWaitDstStageMask);
