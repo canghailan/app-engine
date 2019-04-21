@@ -959,68 +959,68 @@ public class VulkanGraphics {
         renderArea.offset().set(0, 0);
         renderArea.extent().set(width, height);
 
-        for (int i = 0; i < renderCommandBuffers.length; ++i) {
-            // Set target frame buffer
-            renderPassBeginInfo.framebuffer(framebuffers[i]);
-
-            err = vkBeginCommandBuffer(renderCommandBuffers[i], cmdBufInfo);
-            if (err != VK_SUCCESS) {
-                throw new AssertionError("Failed to begin render command buffer: " + translateVulkanResult(err));
-            }
-
-            vkCmdBeginRenderPass(renderCommandBuffers[i], renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-            // Update dynamic viewport state
-            VkViewport.Buffer viewport = VkViewport.calloc(1)
-                    .height(height)
-                    .width(width)
-                    .minDepth(0.0f)
-                    .maxDepth(1.0f);
-            vkCmdSetViewport(renderCommandBuffers[i], 0, viewport);
-            viewport.free();
-
-            // Update dynamic scissor state
-            VkRect2D.Buffer scissor = VkRect2D.calloc(1);
-            scissor.extent().set(width, height);
-            scissor.offset().set(0, 0);
-            vkCmdSetScissor(renderCommandBuffers[i], 0, scissor);
-            scissor.free();
-
-            // Bind the rendering pipeline (including the shaders)
-            vkCmdBindPipeline(renderCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-
-            // Bind triangle vertices
-            LongBuffer offsets = memAllocLong(1);
-            offsets.put(0, 0L);
-            LongBuffer pBuffers = memAllocLong(1);
-            pBuffers.put(0, verticesBuf);
-            vkCmdBindVertexBuffers(renderCommandBuffers[i], 0, pBuffers, offsets);
-            memFree(pBuffers);
-            memFree(offsets);
-
-            // Draw triangle
-            vkCmdDraw(renderCommandBuffers[i], 3, 1, 0, 0);
-
-            vkCmdEndRenderPass(renderCommandBuffers[i]);
-
-            // Add a present memory barrier to the end of the command buffer
-            // This will transform the frame buffer color attachment to a
-            // new layout for presenting it to the windowing system integration
-            VkImageMemoryBarrier.Buffer prePresentBarrier = createPrePresentBarrier(swapchain.images[i]);
-            vkCmdPipelineBarrier(renderCommandBuffers[i],
-                    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                    VK_FLAGS_NONE,
-                    null, // No memory barriers
-                    null, // No buffer memory barriers
-                    prePresentBarrier); // One image memory barrier
-            prePresentBarrier.free();
-
-            err = vkEndCommandBuffer(renderCommandBuffers[i]);
-            if (err != VK_SUCCESS) {
-                throw new AssertionError("Failed to begin render command buffer: " + translateVulkanResult(err));
-            }
-        }
+//        for (int i = 0; i < renderCommandBuffers.length; ++i) {
+//            // Set target frame buffer
+//            renderPassBeginInfo.framebuffer(framebuffers[i]);
+//
+//            err = vkBeginCommandBuffer(renderCommandBuffers[i], cmdBufInfo);
+//            if (err != VK_SUCCESS) {
+//                throw new AssertionError("Failed to begin render command buffer: " + translateVulkanResult(err));
+//            }
+//
+//            vkCmdBeginRenderPass(renderCommandBuffers[i], renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+//
+//            // Update dynamic viewport state
+//            VkViewport.Buffer viewport = VkViewport.calloc(1)
+//                    .height(height)
+//                    .width(width)
+//                    .minDepth(0.0f)
+//                    .maxDepth(1.0f);
+//            vkCmdSetViewport(renderCommandBuffers[i], 0, viewport);
+//            viewport.free();
+//
+//            // Update dynamic scissor state
+//            VkRect2D.Buffer scissor = VkRect2D.calloc(1);
+//            scissor.extent().set(width, height);
+//            scissor.offset().set(0, 0);
+//            vkCmdSetScissor(renderCommandBuffers[i], 0, scissor);
+//            scissor.free();
+//
+//            // Bind the rendering pipeline (including the shaders)
+//            vkCmdBindPipeline(renderCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+//
+//            // Bind triangle vertices
+//            LongBuffer offsets = memAllocLong(1);
+//            offsets.put(0, 0L);
+//            LongBuffer pBuffers = memAllocLong(1);
+//            pBuffers.put(0, verticesBuf);
+//            vkCmdBindVertexBuffers(renderCommandBuffers[i], 0, pBuffers, offsets);
+//            memFree(pBuffers);
+//            memFree(offsets);
+//
+//            // Draw triangle
+//            vkCmdDraw(renderCommandBuffers[i], 3, 1, 0, 0);
+//
+//            vkCmdEndRenderPass(renderCommandBuffers[i]);
+//
+//            // Add a present memory barrier to the end of the command buffer
+//            // This will transform the frame buffer color attachment to a
+//            // new layout for presenting it to the windowing system integration
+//            VkImageMemoryBarrier.Buffer prePresentBarrier = createPrePresentBarrier(swapchain.images[i]);
+//            vkCmdPipelineBarrier(renderCommandBuffers[i],
+//                    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+//                    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+//                    VK_FLAGS_NONE,
+//                    null, // No memory barriers
+//                    null, // No buffer memory barriers
+//                    prePresentBarrier); // One image memory barrier
+//            prePresentBarrier.free();
+//
+//            err = vkEndCommandBuffer(renderCommandBuffers[i]);
+//            if (err != VK_SUCCESS) {
+//                throw new AssertionError("Failed to begin render command buffer: " + translateVulkanResult(err));
+//            }
+//        }
         renderPassBeginInfo.free();
         clearValues.free();
         cmdBufInfo.free();
@@ -1105,6 +1105,21 @@ public class VulkanGraphics {
     private static int width, height;
     private static VkCommandBuffer[] renderCommandBuffers;
 
+    VkInstance instance;
+    VkPhysicalDevice physicalDevice;
+    VkDevice device;
+
+    long window;
+    long surface;
+
+    long commandPool;
+
+    VkQueue queue;
+    long renderPass;
+    Vertices vertices;
+
+    long pipeline;
+
     public void run() throws IOException {
         if (!glfwInit()) {
             throw new RuntimeException("Failed to initialize GLFW");
@@ -1120,7 +1135,7 @@ public class VulkanGraphics {
         }
 
         // Create the Vulkan instance
-        final VkInstance instance = createInstance(requiredExtensions);
+        instance = createInstance(requiredExtensions);
         final VkDebugReportCallbackEXT debugCallback = new VkDebugReportCallbackEXT() {
             public int invoke(int flags, int objectType, long object, long location, int messageCode, long pLayerPrefix, long pMessage, long pUserData) {
                 System.err.println("ERROR OCCURED: " + VkDebugReportCallbackEXT.getString(pMessage));
@@ -1128,9 +1143,9 @@ public class VulkanGraphics {
             }
         };
         final long debugCallbackHandle = setupDebugging(instance, VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT, debugCallback);
-        final VkPhysicalDevice physicalDevice = getFirstPhysicalDevice(instance);
+        physicalDevice = getFirstPhysicalDevice(instance);
         final DeviceAndGraphicsQueueFamily deviceAndGraphicsQueueFamily = createDeviceAndGetGraphicsQueueFamily(physicalDevice);
-        final VkDevice device = deviceAndGraphicsQueueFamily.device;
+        device = deviceAndGraphicsQueueFamily.device;
         int queueFamilyIndex = deviceAndGraphicsQueueFamily.queueFamilyIndex;
         final VkPhysicalDeviceMemoryProperties memoryProperties = deviceAndGraphicsQueueFamily.memoryProperties;
 
@@ -1139,7 +1154,7 @@ public class VulkanGraphics {
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 //        glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
-        long window = glfwCreateWindow(800, 600, "GLFW Vulkan Demo", NULL, NULL);
+        window = glfwCreateWindow(800, 600, "GLFW Vulkan Demo", NULL, NULL);
         GLFWKeyCallback keyCallback;
         glfwSetKeyCallback(window, keyCallback = new GLFWKeyCallback() {
             public void invoke(long window, int key, int scancode, int action, int mods) {
@@ -1151,21 +1166,21 @@ public class VulkanGraphics {
         });
         LongBuffer pSurface = memAllocLong(1);
         int err = glfwCreateWindowSurface(instance, window, null, pSurface);
-        final long surface = pSurface.get(0);
+        surface = pSurface.get(0);
         if (err != VK_SUCCESS) {
             throw new AssertionError("Failed to create surface: " + translateVulkanResult(err));
         }
 
         // Create static Vulkan resources
         final ColorFormatAndSpace colorFormatAndSpace = getColorFormatAndSpace(physicalDevice, surface);
-        final long commandPool = createCommandPool(device, queueFamilyIndex);
+        commandPool = createCommandPool(device, queueFamilyIndex);
         final VkCommandBuffer setupCommandBuffer = createCommandBuffer(device, commandPool);
         final VkCommandBuffer postPresentCommandBuffer = createCommandBuffer(device, commandPool);
-        final VkQueue queue = createDeviceQueue(device, queueFamilyIndex);
-        final long renderPass = createRenderPass(device, colorFormatAndSpace.colorFormat);
+        queue = createDeviceQueue(device, queueFamilyIndex);
+        renderPass = createRenderPass(device, colorFormatAndSpace.colorFormat);
         final long renderCommandPool = createCommandPool(device, queueFamilyIndex);
-        final Vertices vertices = createVertices(memoryProperties, device);
-        final long pipeline = createPipeline(device, renderPass, vertices.createInfo);
+        vertices = createVertices(memoryProperties, device);
+        pipeline = createPipeline(device, renderPass, vertices.createInfo);
 
         final class SwapchainRecreator {
             boolean mustRecreate = true;
@@ -1285,6 +1300,8 @@ public class VulkanGraphics {
                 throw new AssertionError("Failed to acquire next swapchain image: " + translateVulkanResult(err));
             }
 
+            render(currentBuffer);
+
             // Select the command buffer for the current framebuffer image/attachment
             pCommandBuffers.put(0, renderCommandBuffers[currentBuffer]);
 
@@ -1327,5 +1344,100 @@ public class VulkanGraphics {
 
         // We don't bother disposing of all Vulkan resources.
         // Let the OS process manager take care of it.
+    }
+
+    private void render(int i) {
+        int err ;
+
+        // Create the command buffer begin structure
+        VkCommandBufferBeginInfo cmdBufInfo = VkCommandBufferBeginInfo.calloc()
+                .sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO)
+                .pNext(NULL);
+
+        // Specify clear color (cornflower blue)
+        VkClearValue.Buffer clearValues = VkClearValue.calloc(1);
+        clearValues.color()
+                .float32(0, 100/255.0f)
+                .float32(1, 149/255.0f)
+                .float32(2, 237/255.0f)
+                .float32(3, 1.0f);
+
+        // Specify everything to begin a render pass
+        VkRenderPassBeginInfo renderPassBeginInfo = VkRenderPassBeginInfo.calloc()
+                .sType(VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO)
+                .pNext(NULL)
+                .renderPass(renderPass)
+                .pClearValues(clearValues);
+        VkRect2D renderArea = renderPassBeginInfo.renderArea();
+        renderArea.offset().set(0, 0);
+        renderArea.extent().set(width, height);
+
+            // Set target frame buffer
+            renderPassBeginInfo.framebuffer(framebuffers[i]);
+        err = vkResetCommandBuffer(renderCommandBuffers[i], 0);
+        if (err != VK_SUCCESS) {
+            throw new AssertionError("Failed to reset render command buffer: " + translateVulkanResult(err));
+        }
+
+            err = vkBeginCommandBuffer(renderCommandBuffers[i], cmdBufInfo);
+            if (err != VK_SUCCESS) {
+                throw new AssertionError("Failed to begin render command buffer: " + translateVulkanResult(err));
+            }
+
+            vkCmdBeginRenderPass(renderCommandBuffers[i], renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+            // Update dynamic viewport state
+            VkViewport.Buffer viewport = VkViewport.calloc(1)
+                    .height(height)
+                    .width(width)
+                    .minDepth(0.0f)
+                    .maxDepth(1.0f);
+            vkCmdSetViewport(renderCommandBuffers[i], 0, viewport);
+            viewport.free();
+
+            // Update dynamic scissor state
+            VkRect2D.Buffer scissor = VkRect2D.calloc(1);
+            scissor.extent().set(width , height );
+            scissor.offset().set(0, 0);
+            vkCmdSetScissor(renderCommandBuffers[i], 0, scissor);
+            scissor.free();
+
+            // Bind the rendering pipeline (including the shaders)
+            vkCmdBindPipeline(renderCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+
+            // Bind triangle vertices
+            LongBuffer offsets = memAllocLong(1);
+            offsets.put(0, 0L);
+            LongBuffer pBuffers = memAllocLong(1);
+            pBuffers.put(0, vertices.verticesBuf);
+            vkCmdBindVertexBuffers(renderCommandBuffers[i], 0, pBuffers, offsets);
+            memFree(pBuffers);
+            memFree(offsets);
+
+            // Draw triangle
+            vkCmdDraw(renderCommandBuffers[i], 3, 1, 0, 0);
+
+            vkCmdEndRenderPass(renderCommandBuffers[i]);
+
+            // Add a present memory barrier to the end of the command buffer
+            // This will transform the frame buffer color attachment to a
+            // new layout for presenting it to the windowing system integration
+            VkImageMemoryBarrier.Buffer prePresentBarrier = createPrePresentBarrier(swapchain.images[i]);
+            vkCmdPipelineBarrier(renderCommandBuffers[i],
+                    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                    VK_FLAGS_NONE,
+                    null, // No memory barriers
+                    null, // No buffer memory barriers
+                    prePresentBarrier); // One image memory barrier
+            prePresentBarrier.free();
+
+            err = vkEndCommandBuffer(renderCommandBuffers[i]);
+            if (err != VK_SUCCESS) {
+                throw new AssertionError("Failed to begin render command buffer: " + translateVulkanResult(err));
+            }
+        renderPassBeginInfo.free();
+        clearValues.free();
+        cmdBufInfo.free();
     }
 }
