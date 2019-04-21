@@ -1105,7 +1105,7 @@ public class VulkanGraphics {
     private static int width, height;
     private static VkCommandBuffer[] renderCommandBuffers;
 
-    public static void main(String[] args) throws IOException {
+    public void run() throws IOException {
         if (!glfwInit()) {
             throw new RuntimeException("Failed to initialize GLFW");
         }
