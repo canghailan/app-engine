@@ -104,8 +104,8 @@ public class VulkanGraphics {
                 .apiVersion(VK_MAKE_VERSION(1, 0, 2));
         PointerBuffer ppEnabledExtensionNames = memAllocPointer(requiredExtensions.remaining() + 1);
         ppEnabledExtensionNames.put(requiredExtensions);
-        ByteBuffer VK_EXT_DEBUG_REPORT_EXTENSION = memUTF8(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
-        ppEnabledExtensionNames.put(VK_EXT_DEBUG_REPORT_EXTENSION);
+//        ByteBuffer VK_EXT_DEBUG_REPORT_EXTENSION = memUTF8(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+//        ppEnabledExtensionNames.put(VK_EXT_DEBUG_REPORT_EXTENSION);
         ppEnabledExtensionNames.flip();
         PointerBuffer ppEnabledLayerNames = memAllocPointer(layers.length);
         for (int i = 0; validation && i < layers.length; i++)
@@ -127,7 +127,7 @@ public class VulkanGraphics {
         VkInstance ret = new VkInstance(instance, pCreateInfo);
         pCreateInfo.free();
         memFree(ppEnabledLayerNames);
-        memFree(VK_EXT_DEBUG_REPORT_EXTENSION);
+//        memFree(VK_EXT_DEBUG_REPORT_EXTENSION);
         memFree(ppEnabledExtensionNames);
         memFree(appInfo.pApplicationName());
         memFree(appInfo.pEngineName());
@@ -135,23 +135,23 @@ public class VulkanGraphics {
         return ret;
     }
 
-    private static long setupDebugging(VkInstance instance, int flags, VkDebugReportCallbackEXT callback) {
-        VkDebugReportCallbackCreateInfoEXT dbgCreateInfo = VkDebugReportCallbackCreateInfoEXT.calloc()
-                .sType(VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT)
-                .pNext(NULL)
-                .pfnCallback(callback)
-                .pUserData(NULL)
-                .flags(flags);
-        LongBuffer pCallback = memAllocLong(1);
-        int err = vkCreateDebugReportCallbackEXT(instance, dbgCreateInfo, null, pCallback);
-        long callbackHandle = pCallback.get(0);
-        memFree(pCallback);
-        dbgCreateInfo.free();
-        if (err != VK_SUCCESS) {
-            throw new AssertionError("Failed to create VkInstance: " + translateVulkanResult(err));
-        }
-        return callbackHandle;
-    }
+//    private static long setupDebugging(VkInstance instance, int flags, VkDebugReportCallbackEXT callback) {
+//        VkDebugReportCallbackCreateInfoEXT dbgCreateInfo = VkDebugReportCallbackCreateInfoEXT.calloc()
+//                .sType(VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT)
+//                .pNext(NULL)
+//                .pfnCallback(callback)
+//                .pUserData(NULL)
+//                .flags(flags);
+//        LongBuffer pCallback = memAllocLong(1);
+//        int err = vkCreateDebugReportCallbackEXT(instance, dbgCreateInfo, null, pCallback);
+//        long callbackHandle = pCallback.get(0);
+//        memFree(pCallback);
+//        dbgCreateInfo.free();
+//        if (err != VK_SUCCESS) {
+//            throw new AssertionError("Failed to create VkInstance: " + translateVulkanResult(err));
+//        }
+//        return callbackHandle;
+//    }
 
     private static VkPhysicalDevice getFirstPhysicalDevice(VkInstance instance) {
         IntBuffer pPhysicalDeviceCount = memAllocInt(1);
@@ -1143,7 +1143,7 @@ public class VulkanGraphics {
                 return 0;
             }
         };
-        final long debugCallbackHandle = setupDebugging(instance, VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT, debugCallback);
+//        final long debugCallbackHandle = setupDebugging(instance, VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT, debugCallback);
         physicalDevice = getFirstPhysicalDevice(instance);
         final DeviceAndGraphicsQueueFamily deviceAndGraphicsQueueFamily = createDeviceAndGetGraphicsQueueFamily(physicalDevice);
         device = deviceAndGraphicsQueueFamily.device;
@@ -1343,7 +1343,7 @@ public class VulkanGraphics {
         memFree(pSwapchains);
         memFree(pCommandBuffers);
 
-        vkDestroyDebugReportCallbackEXT(instance, debugCallbackHandle, null);
+//        vkDestroyDebugReportCallbackEXT(instance, debugCallbackHandle, null);
 
         windowSizeCallback.free();
         keyCallback.free();
